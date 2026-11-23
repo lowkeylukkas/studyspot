@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   ArrowRight, ArrowUpRight, BookOpen, Check, CheckCircle2, Clock3,
   Coffee, Headphones, MapPin, Search, SlidersHorizontal, Sparkles,
-  Users, Wifi, Zap, X, Leaf, Menu
+  Users, Wifi, Zap, X, Leaf, Menu, CalendarDays, UsersRound
 } from 'lucide-react'
 
 type Vibe = 'Quiet' | 'Moderate' | 'Group'
@@ -66,8 +66,21 @@ const initialSpots: Spot[] = [
   }
 ]
 
+type CampusEvent = { id: number; title: string; type: string; date: string; time: string; location: string; description: string; capacity: number; attendees: number; image: string }
+
+const initialEvents: CampusEvent[] = [
+  { id: 1, title: 'Focus Friday', type: 'Group study', date: 'Friday, November 27', time: '3:00 PM – 5:00 PM', location: 'Learning Commons · 2nd floor', description: 'A quiet, guided study session with dedicated focus blocks and short breaks.', capacity: 20, attendees: 14, image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=85' },
+  { id: 2, title: 'Study Skills Workshop', type: 'Workshop', date: 'Monday, November 30', time: '10:00 AM – 11:30 AM', location: 'Innovation Hall · Room 204', description: 'Learn practical note-taking, time management, and exam preparation techniques.', capacity: 30, attendees: 18, image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85' },
+  { id: 3, title: 'Math Buddies Meetup', type: 'Peer study', date: 'Wednesday, December 2', time: '1:00 PM – 2:30 PM', location: 'Greenhouse Lounge · Student Center', description: 'Bring your questions and work through tricky problems with fellow students.', capacity: 12, attendees: 12, image: 'https://images.unsplash.com/photo-1529390079861-591de354faf5?auto=format&fit=crop&w=900&q=85' }
+]
+
 function StudySpotFinder() {
   const [spots, setSpots] = useState(initialSpots)
+  const [events, setEvents] = useState(initialEvents)
+  const [selectedEvent, setSelectedEvent] = useState<CampusEvent | null>(null)
+  const [rsvpName, setRsvpName] = useState('')
+  const [rsvpEmail, setRsvpEmail] = useState('')
+  const [rsvpConfirmed, setRsvpConfirmed] = useState(false)
   const [query, setQuery] = useState('')
   const [vibe, setVibe] = useState('Any vibe')
   const [outletsOnly, setOutletsOnly] = useState(false)
@@ -117,7 +130,7 @@ function StudySpotFinder() {
           <span>study<span className="brand-light">spot</span><span className="brand-period">.</span></span>
         </a>
         <div className={`nav-links ${mobileMenu ? 'nav-open' : ''}`}>
-          <a href="#spaces" onClick={() => setMobileMenu(false)}>Find a spot</a>
+          <a href="#spaces" onClick={() => setMobileMenu(false)}>Find a spot</a>\n          <a href="#events" onClick={() => setMobileMenu(false)}>Events & RSVP</a>
           <a href="#how-it-works" onClick={() => setMobileMenu(false)}>How it works</a>
           <a href="#about" onClick={() => setMobileMenu(false)}>About</a>
         </div>
@@ -213,6 +226,35 @@ function StudySpotFinder() {
           <p className="directory-note"><span className="tiny-dot" /> Availability shown is sample data for this prototype.</p>
         </section>
 
+        <section className="events-section" id="events">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow"><span className="eyebrow-dot" /> CAMPUS COMMUNITY</div>
+              <h2>More than a seat.<br /><em>Find your people.</em></h2>
+              <p>Join study sessions, learn something new, and meet classmates along the way.</p>
+            </div>
+            <div className="result-count"><span>{events.length.toString().padStart(2, '0')}</span> UPCOMING EVENTS</div>
+          </div>
+          <div className="event-grid">
+            {events.map(event => {
+              const remaining = Math.max(event.capacity - event.attendees, 0)
+              return <article className="event-card" key={event.id}>
+                <div className="event-image-wrap"><img src={event.image} alt="" /><span className="event-type">{event.type}</span></div>
+                <div className="event-body">
+                  <h3>{event.title}</h3>
+                  <p>{event.description}</p>
+                  <div className="event-detail"><CalendarDays size={14} /> {event.date} · {event.time}</div>
+                  <div className="event-detail"><MapPin size={14} /> {event.location}</div>
+                  <div className="event-footer"><span className={remaining ? 'event-seats' : 'event-full'}><UsersRound size={14} /> {remaining ? remaining + ' spots left' : 'Fully booked'}</span>
+                    <button className="reserve-button" disabled={!remaining} onClick={() => { setSelectedEvent(event); setRsvpName(''); setRsvpEmail(''); setRsvpConfirmed(false) }}>{remaining ? 'RSVP now' : 'Full'} <ArrowUpRight size={15} /></button>
+                  </div>
+                </div>
+              </article>
+            })}
+          </div>
+          <p className="directory-note"><span className="tiny-dot" /> Event schedules and RSVP counts are sample data for this prototype.</p>
+        </section>
+
         <section className="how-section" id="how-it-works">
           <div className="how-intro">
             <div className="eyebrow"><span className="eyebrow-dot" /> THE EASY PART</div>
@@ -240,6 +282,30 @@ function StudySpotFinder() {
         <span>DESIGNED FOR CAMPUS LIFE · 2026</span>
       </footer>
 
+      {selectedEvent && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setSelectedEvent(null) }}>
+        <div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="rsvp-title">
+          <button className="modal-close" onClick={() => setSelectedEvent(null)} aria-label="Close RSVP"><X size={19} /></button>
+          {!rsvpConfirmed ? <>
+            <div className="eyebrow"><span className="eyebrow-dot" /> SAVE YOUR PLACE</div>
+            <h2 id="rsvp-title">Count me <em>in.</em></h2>
+            <p className="modal-subtitle">RSVP for {selectedEvent.title}.</p>
+            <div className="booking-summary"><img src={selectedEvent.image} alt="" /><div><strong>{selectedEvent.title}</strong><span><CalendarDays size={12} /> {selectedEvent.date} · {selectedEvent.time}</span><small>{selectedEvent.location}</small></div></div>
+            <form className="booking-form" onSubmit={e => { e.preventDefault(); setEvents(current => current.map(item => item.id === selectedEvent.id ? { ...item, attendees: Math.min(item.attendees + 1, item.capacity) } : item)); setRsvpConfirmed(true) }}>
+              <label>Your name<input required value={rsvpName} onChange={e => setRsvpName(e.target.value)} placeholder="e.g. Alex Santos" /></label>
+              <label>Email address<input required type="email" value={rsvpEmail} onChange={e => setRsvpEmail(e.target.value)} placeholder="you@example.com" /></label>
+              <div className="prototype-notice"><Sparkles size={15} /><span>This is a demo RSVP. No real event registration or email will be sent.</span></div>
+              <button type="submit" className="primary-button modal-submit">Confirm RSVP <ArrowRight size={17} /></button>
+            </form>
+          </> : <div className="confirmation">
+            <div className="success-icon"><CheckCircle2 size={34} /></div>
+            <div className="eyebrow"><span className="eyebrow-dot" /> RSVP CONFIRMED</div>
+            <h2>See you <em>there!</em></h2>
+            <p>You're on the list, {rsvpName.split(' ')[0] || 'student'}.</p>
+            <div className="confirmation-ticket"><span>YOUR EVENT</span><strong>{selectedEvent.title}</strong><p><CalendarDays size={13} /> {selectedEvent.date} · {selectedEvent.time}</p><div><span>ATTENDEE</span><b>{rsvpName}</b></div><div><span>EMAIL</span><b>{rsvpEmail}</b></div><div><span>LOCATION</span><b>{selectedEvent.location}</b></div><div><span>STATUS</span><b className="status-confirmed"><Check size={13} /> RSVP CONFIRMED (DEMO)</b></div></div>
+            <button className="primary-button modal-submit" onClick={() => setSelectedEvent(null)}>Back to StudySpot <ArrowRight size={17} /></button>
+          </div>}
+        </div>
+      </div>}
       {selected && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) closeModal() }}>
         <div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title">
           <button className="modal-close" onClick={closeModal} aria-label="Close reservation"><X size={19} /></button>
